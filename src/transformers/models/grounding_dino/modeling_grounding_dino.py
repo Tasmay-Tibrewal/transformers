@@ -51,8 +51,8 @@ _CONFIG_FOR_DOC = "GroundingDinoConfig"
 _CHECKPOINT_FOR_DOC = "IDEA-Research/grounding-dino-tiny"
 
 
+# Copied from models.deformable_detr.MultiScaleDeformableAttention
 @use_kernel_forward_from_hub("MultiScaleDeformableAttention")
-# Copied from transformers.models.deformable_detr.modeling_deformable_detr.MultiScaleDeformableAttention
 class MultiScaleDeformableAttention(nn.Module):
     def forward(
         self,
@@ -66,10 +66,10 @@ class MultiScaleDeformableAttention(nn.Module):
     ):
         batch_size, _, num_heads, hidden_dim = value.shape
         _, num_queries, num_heads, num_levels, num_points, _ = sampling_locations.shape
-        value_list = value.split([height * width for height, width in value_spatial_shapes_list], dim=1)
+        value_list = value.split([height * width for height, width in value_spatial_shapes], dim=1)
         sampling_grids = 2 * sampling_locations - 1
         sampling_value_list = []
-        for level_id, (height, width) in enumerate(value_spatial_shapes_list):
+        for level_id, (height, width) in enumerate(value_spatial_shapes):
             # batch_size, height*width, num_heads, hidden_dim
             # -> batch_size, height*width, num_heads*hidden_dim
             # -> batch_size, num_heads*hidden_dim, height*width
@@ -1015,7 +1015,6 @@ class GroundingDinoDeformableLayer(nn.Module):
         position_embeddings: torch.Tensor = None,
         reference_points=None,
         spatial_shapes=None,
-        spatial_shapes_list=None,
         level_start_index=None,
         output_attentions: bool = False,
     ):
@@ -1031,8 +1030,6 @@ class GroundingDinoDeformableLayer(nn.Module):
                 Reference points.
             spatial_shapes (`torch.LongTensor`, *optional*):
                 Spatial shapes of the backbone feature maps.
-            spatial_shapes_list (`List[Tuple[int, int]]`, *optional*):
-                Spatial shapes of the backbone feature maps (but as list for export compatibility).
             level_start_index (`torch.LongTensor`, *optional*):
                 Level start index.
             output_attentions (`bool`, *optional*):
@@ -1050,7 +1047,6 @@ class GroundingDinoDeformableLayer(nn.Module):
             position_embeddings=position_embeddings,
             reference_points=reference_points,
             spatial_shapes=spatial_shapes,
-            spatial_shapes_list=spatial_shapes_list,
             level_start_index=level_start_index,
             output_attentions=output_attentions,
         )
@@ -1151,7 +1147,6 @@ class GroundingDinoEncoderLayer(nn.Module):
         vision_features: Tensor,
         vision_position_embedding: Tensor,
         spatial_shapes: Tensor,
-        spatial_shapes_list: List[Tuple[int, int]],
         level_start_index: Tensor,
         key_padding_mask: Tensor,
         reference_points: Tensor,
@@ -1184,7 +1179,6 @@ class GroundingDinoEncoderLayer(nn.Module):
             position_embeddings=vision_position_embedding,
             reference_points=reference_points,
             spatial_shapes=spatial_shapes,
-            spatial_shapes_list=spatial_shapes_list,
             level_start_index=level_start_index,
         )
 
@@ -1301,7 +1295,6 @@ class GroundingDinoDecoderLayer(nn.Module):
         position_embeddings: Optional[torch.Tensor] = None,
         reference_points=None,
         spatial_shapes=None,
-        spatial_shapes_list=None,
         level_start_index=None,
         vision_encoder_hidden_states: Optional[torch.Tensor] = None,
         vision_encoder_attention_mask: Optional[torch.Tensor] = None,
@@ -1354,7 +1347,6 @@ class GroundingDinoDecoderLayer(nn.Module):
             position_embeddings=position_embeddings,
             reference_points=reference_points,
             spatial_shapes=spatial_shapes,
-            spatial_shapes_list=spatial_shapes_list,
             level_start_index=level_start_index,
             output_attentions=output_attentions,
         )
@@ -1602,7 +1594,6 @@ class GroundingDinoEncoder(GroundingDinoPreTrainedModel):
         vision_attention_mask: Tensor,
         vision_position_embedding: Tensor,
         spatial_shapes: Tensor,
-        spatial_shapes_list: List[Tuple[int, int]],
         level_start_index: Tensor,
         valid_ratios=None,
         text_features: Optional[Tensor] = None,
@@ -1627,8 +1618,6 @@ class GroundingDinoEncoder(GroundingDinoPreTrainedModel):
                 Position embeddings that are added to the queries and keys in each self-attention layer.
             spatial_shapes (`torch.LongTensor` of shape `(num_feature_levels, 2)`):
                 Spatial shapes of each feature map.
-            spatial_shapes_list (`List[Tuple[int, int]]`):
-                Spatial shapes of each feature map (but as list for export compatibility).
             level_start_index (`torch.LongTensor` of shape `(num_feature_levels)`):
                 Starting index of each feature map.
             valid_ratios (`torch.FloatTensor` of shape `(batch_size, num_feature_levels, 2)`):
@@ -1681,7 +1670,6 @@ class GroundingDinoEncoder(GroundingDinoPreTrainedModel):
                 vision_features=vision_features,
                 vision_position_embedding=vision_position_embedding,
                 spatial_shapes=spatial_shapes,
-                spatial_shapes_list=spatial_shapes_list,
                 level_start_index=level_start_index,
                 key_padding_mask=vision_attention_mask,
                 reference_points=reference_points,
@@ -1760,7 +1748,6 @@ class GroundingDinoDecoder(GroundingDinoPreTrainedModel):
         text_encoder_attention_mask=None,
         reference_points=None,
         spatial_shapes=None,
-        spatial_shapes_list=None,
         level_start_index=None,
         valid_ratios=None,
         self_attn_mask=None,
@@ -1788,8 +1775,6 @@ class GroundingDinoDecoder(GroundingDinoPreTrainedModel):
                 Reference point in range `[0, 1]`, top-left (0,0), bottom-right (1, 1), including padding area.
             spatial_shapes (`torch.FloatTensor` of shape `(num_feature_levels, 2)`):
                 Spatial shapes of the feature maps.
-            spatial_shapes_list (`List[Tuple[int, int]]`):
-                Spatial shapes of the feature maps (but as list for export compatibility).
             level_start_index (`torch.LongTensor` of shape `(num_feature_levels)`, *optional*):
                 Indexes for the start of each feature level. In range `[0, sequence_length]`.
             valid_ratios (`torch.FloatTensor` of shape `(batch_size, num_feature_levels, 2)`, *optional*):
@@ -1882,7 +1867,6 @@ class GroundingDinoDecoder(GroundingDinoPreTrainedModel):
                     position_embeddings=query_pos,
                     reference_points=reference_points_input,
                     spatial_shapes=spatial_shapes,
-                    spatial_shapes_list=spatial_shapes_list,
                     level_start_index=level_start_index,
                     vision_encoder_hidden_states=vision_encoder_hidden_states,
                     vision_encoder_attention_mask=vision_encoder_attention_mask,
@@ -2264,11 +2248,11 @@ class GroundingDinoModel(GroundingDinoPreTrainedModel):
         source_flatten = []
         mask_flatten = []
         lvl_pos_embed_flatten = []
-        spatial_shapes_list = []
+        spatial_shapes = []
         for level, (source, mask, pos_embed) in enumerate(zip(feature_maps, masks, position_embeddings_list)):
             batch_size, num_channels, height, width = source.shape
             spatial_shape = (height, width)
-            spatial_shapes_list.append(spatial_shape)
+            spatial_shapes.append(spatial_shape)
             source = source.flatten(2).transpose(1, 2)
             mask = mask.flatten(1)
             pos_embed = pos_embed.flatten(2).transpose(1, 2)
@@ -2279,7 +2263,7 @@ class GroundingDinoModel(GroundingDinoPreTrainedModel):
         source_flatten = torch.cat(source_flatten, 1)
         mask_flatten = torch.cat(mask_flatten, 1)
         lvl_pos_embed_flatten = torch.cat(lvl_pos_embed_flatten, 1)
-        spatial_shapes = torch.as_tensor(spatial_shapes_list, dtype=torch.long, device=source_flatten.device)
+        spatial_shapes = torch.as_tensor(spatial_shapes, dtype=torch.long, device=source_flatten.device)
         level_start_index = torch.cat((spatial_shapes.new_zeros((1,)), spatial_shapes.prod(1).cumsum(0)[:-1]))
         valid_ratios = torch.stack([self.get_valid_ratio(m) for m in masks], 1)
         valid_ratios = valid_ratios.float()
@@ -2292,7 +2276,6 @@ class GroundingDinoModel(GroundingDinoPreTrainedModel):
                 vision_attention_mask=~mask_flatten,
                 vision_position_embedding=lvl_pos_embed_flatten,
                 spatial_shapes=spatial_shapes,
-                spatial_shapes_list=spatial_shapes_list,
                 level_start_index=level_start_index,
                 valid_ratios=valid_ratios,
                 text_features=text_features,
@@ -2369,7 +2352,6 @@ class GroundingDinoModel(GroundingDinoPreTrainedModel):
             text_encoder_attention_mask=~text_token_mask,
             reference_points=reference_points,
             spatial_shapes=spatial_shapes,
-            spatial_shapes_list=spatial_shapes_list,
             level_start_index=level_start_index,
             valid_ratios=valid_ratios,
             self_attn_mask=None,

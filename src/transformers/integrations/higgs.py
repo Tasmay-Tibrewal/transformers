@@ -446,7 +446,7 @@ def quantize_with_higgs(weight, bits: int = 4, p: int = 2, group_size: int = 256
 
     device = weight.device
     dtype = weight.dtype
-    weight = weight.to(copy=True, dtype=torch.float32)
+    weight = weight.clone().float()
     # Pad to Hadamard transform size
     weight = pad_to_block(weight, [1], hadamard_size)
 

@@ -72,7 +72,8 @@ class VivitTubeletEmbeddings(nn.Module):
         batch_size, num_frames, num_channels, height, width = pixel_values.shape
         if not interpolate_pos_encoding and (height != self.image_size or width != self.image_size):
             raise ValueError(
-                f"Image image size ({height}*{width}) doesn't match model ({self.image_size[0]}*{self.image_size[1]})."
+                f"Image image size ({height}*{width}) doesn't match model"
+                f" ({self.image_size[0]}*{self.image_size[1]})."
             )
 
         # permute to (batch_size, num_channels, num_frames, height, width)
@@ -485,9 +486,8 @@ class VivitPreTrainedModel(PreTrainedModel):
         elif isinstance(module, nn.LayerNorm):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
-        elif isinstance(module, VivitEmbeddings):
-            module.cls_token.data.zero_()
-            module.position_embeddings.data.zero_()
+        elif isinstance(module, nn.Parameter):
+            module.data.normal_(mean=0.0, std=self.config.initializer_range)
 
 
 VIVIT_START_DOCSTRING = r"""

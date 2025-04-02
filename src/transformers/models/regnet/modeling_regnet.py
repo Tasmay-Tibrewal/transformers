@@ -80,7 +80,7 @@ class RegNetConvLayer(nn.Module):
 
 class RegNetEmbeddings(nn.Module):
     """
-    RegNet Embeddings (stem) composed of a single aggressive convolution.
+    RegNet Embedddings (stem) composed of a single aggressive convolution.
     """
 
     def __init__(self, config: RegNetConfig):

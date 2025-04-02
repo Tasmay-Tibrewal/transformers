@@ -14,6 +14,7 @@
 # limitations under the License.
 """Factory function to build auto-model classes."""
 
+import sys
 import copy
 import importlib
 import json
@@ -387,20 +388,25 @@ FROM_PRETRAINED_FLAX_DOCSTRING = """
 def _get_model_class(config, model_mapping):
     supported_models = model_mapping[type(config)]
     if not isinstance(supported_models, (list, tuple)):
+        print(f"in _get_model_class. returning: {supported_models}")
         return supported_models
 
     name_to_model = {model.__name__: model for model in supported_models}
     architectures = getattr(config, "architectures", [])
     for arch in architectures:
         if arch in name_to_model:
+            print(f"in _get_model_class. returning: {name_to_model[arch]}")
             return name_to_model[arch]
         elif f"TF{arch}" in name_to_model:
+            print(f"in _get_model_class. returning: {name_to_model[f'TF{arch}']}")
             return name_to_model[f"TF{arch}"]
         elif f"Flax{arch}" in name_to_model:
+            print(f"in _get_model_class. returning: {name_to_model[f'Flax{arch}']}")
             return name_to_model[f"Flax{arch}"]
 
     # If not architecture is set in the config or match the supported models, the first element of the tuple is the
     # defaults.
+    print(f"in _get_model_class. returning: {supported_models[0]}")
     return supported_models[0]
 
 
@@ -425,6 +431,7 @@ class _BaseAutoModelClass:
         )
 
         if has_remote_code and trust_remote_code:
+            print(f"Trust remote code and has remote code.", file=sys.stderr, flush=True)
             class_ref = config.auto_map[cls.__name__]
             if "--" in class_ref:
                 repo_id, class_ref = class_ref.split("--")
@@ -436,7 +443,9 @@ class _BaseAutoModelClass:
             model_class = add_generation_mixin_to_remote_model(model_class)
             return model_class._from_config(config, **kwargs)
         elif type(config) in cls._model_mapping.keys():
+            print(f"Both Trust remote code and has remote code is false.", file=sys.stderr, flush=True)
             model_class = _get_model_class(config, cls._model_mapping)
+            print(f"_from config method of the vision tower class: {model_class._from_config}")
             return model_class._from_config(config, **kwargs)
 
         raise ValueError(

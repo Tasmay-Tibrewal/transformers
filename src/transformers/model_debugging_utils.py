@@ -1,3 +1,4 @@
+# coding=utf-8
 # Copyright 2025 The HuggingFace Inc. team.
 # All rights reserved.
 #
@@ -18,7 +19,6 @@ import json
 import os
 import re
 from contextlib import contextmanager
-from typing import Optional
 
 from transformers.utils.import_utils import export
 
@@ -284,7 +284,7 @@ def model_addition_debugger(cls):
 
 @export(backends=("torch",))
 @contextmanager
-def model_addition_debugger_context(model, debug_path: Optional[str] = None):
+def model_addition_debugger_context(model, debug_path: str = None):
     """
     # Model addition debugger - context manager for model adders
     This context manager is a power user tool intended for model adders.

@@ -80,7 +80,6 @@ TF_MODEL_MAPPING_NAMES = OrderedDict(
         ("roberta-prelayernorm", "TFRobertaPreLayerNormModel"),
         ("roformer", "TFRoFormerModel"),
         ("sam", "TFSamModel"),
-        ("sam_vision_model", "TFSamVisionModel"),
         ("segformer", "TFSegformerModel"),
         ("speech_to_text", "TFSpeech2TextModel"),
         ("swiftformer", "TFSwiftFormerModel"),

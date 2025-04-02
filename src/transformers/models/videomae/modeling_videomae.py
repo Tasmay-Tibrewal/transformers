@@ -131,9 +131,7 @@ class VideoMAEEmbeddings(nn.Module):
         embeddings = self.patch_embeddings(pixel_values)
 
         # add position embeddings
-        embeddings = embeddings + self.position_embeddings.detach().type_as(embeddings).to(
-            device=embeddings.device, copy=True
-        )
+        embeddings = embeddings + self.position_embeddings.type_as(embeddings).to(embeddings.device).clone().detach()
         # only keep visible patches
         # ~bool_masked_pos means visible
         if bool_masked_pos is not None:
@@ -858,7 +856,7 @@ class VideoMAEForPreTraining(VideoMAEPreTrainedModel):
         if bool_masked_pos is None:
             raise ValueError("One must provided a boolean mask ")
         expanded_position_embeddings = self.position_embeddings.expand(batch_size, -1, -1).type_as(pixel_values)
-        expanded_position_embeddings = expanded_position_embeddings.detach().to(device=pixel_values.device, copy=True)
+        expanded_position_embeddings = expanded_position_embeddings.to(pixel_values.device).clone().detach()
         pos_emb_visible = expanded_position_embeddings[~bool_masked_pos].reshape(batch_size, -1, num_channels)
         pos_emb_mask = expanded_position_embeddings[bool_masked_pos].reshape(batch_size, -1, num_channels)
 

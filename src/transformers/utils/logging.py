@@ -1,3 +1,4 @@
+# coding=utf-8
 # Copyright 2020 Optuna, Hugging Face
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -64,7 +65,7 @@ def _get_default_logging_level():
         else:
             logging.getLogger().warning(
                 f"Unknown option TRANSFORMERS_VERBOSITY={env_level_str}, "
-                f"has to be one of: {', '.join(log_levels.keys())}"
+                f"has to be one of: { ', '.join(log_levels.keys()) }"
             )
     return _default_log_level
 

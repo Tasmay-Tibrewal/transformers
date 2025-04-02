@@ -14,8 +14,6 @@
 # limitations under the License.
 """Graphormer model configuration"""
 
-from typing import Optional
-
 from ....configuration_utils import PretrainedConfig
 from ....utils import logging
 
@@ -161,8 +159,8 @@ class GraphormerConfig(PretrainedConfig):
         traceable: bool = False,
         q_noise: float = 0.0,
         qn_block_size: int = 8,
-        kdim: Optional[int] = None,
-        vdim: Optional[int] = None,
+        kdim: int = None,
+        vdim: int = None,
         bias: bool = True,
         self_attention: bool = True,
         pad_token_id=0,

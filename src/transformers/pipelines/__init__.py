@@ -565,7 +565,7 @@ def clean_custom_task(task_info):
 
 
 def pipeline(
-    task: Optional[str] = None,
+    task: str = None,
     model: Optional[Union[str, "PreTrainedModel", "TFPreTrainedModel"]] = None,
     config: Optional[Union[str, PretrainedConfig]] = None,
     tokenizer: Optional[Union[str, PreTrainedTokenizer, "PreTrainedTokenizerFast"]] = None,
@@ -580,7 +580,7 @@ def pipeline(
     device_map=None,
     torch_dtype=None,
     trust_remote_code: Optional[bool] = None,
-    model_kwargs: Optional[Dict[str, Any]] = None,
+    model_kwargs: Dict[str, Any] = None,
     pipeline_class: Optional[Any] = None,
     **kwargs,
 ) -> Pipeline:

@@ -35,7 +35,7 @@ from ...image_utils import (
     get_image_size,
     infer_channel_dimension_format,
     is_scaled_image,
-    make_flat_list_of_images,
+    make_nested_list_of_images,
     to_numpy_array,
     valid_images,
     validate_preprocess_arguments,
@@ -104,8 +104,8 @@ class Gemma3ImageProcessor(BaseImageProcessor):
         image_std: Optional[Union[float, List[float]]] = None,
         do_convert_rgb: bool = None,
         do_pan_and_scan: bool = None,
-        pan_and_scan_min_crop_size: Optional[int] = None,
-        pan_and_scan_max_num_crops: Optional[int] = None,
+        pan_and_scan_min_crop_size: int = None,
+        pan_and_scan_max_num_crops: int = None,
         pan_and_scan_min_ratio_to_activate: float = None,
         **kwargs,
     ) -> None:
@@ -253,8 +253,8 @@ class Gemma3ImageProcessor(BaseImageProcessor):
         input_data_format: Optional[Union[str, ChannelDimension]] = None,
         do_convert_rgb: bool = None,
         do_pan_and_scan: bool = None,
-        pan_and_scan_min_crop_size: Optional[int] = None,
-        pan_and_scan_max_num_crops: Optional[int] = None,
+        pan_and_scan_min_crop_size: int = None,
+        pan_and_scan_max_num_crops: int = None,
         pan_and_scan_min_ratio_to_activate: float = None,
     ) -> PIL.Image.Image:
         """
@@ -334,9 +334,9 @@ class Gemma3ImageProcessor(BaseImageProcessor):
             else self.pan_and_scan_min_ratio_to_activate
         )
 
-        images = make_flat_list_of_images(images)
+        images_list = make_nested_list_of_images(images)
 
-        if not valid_images(images):
+        if not valid_images(images_list[0]):
             raise ValueError(
                 "Invalid image type. Must be of type PIL.Image.Image, numpy.ndarray, "
                 "torch.Tensor, tf.Tensor or jax.ndarray."
@@ -353,12 +353,12 @@ class Gemma3ImageProcessor(BaseImageProcessor):
             resample=resample,
         )
         if do_convert_rgb:
-            images = [convert_to_rgb(image) for image in images]
+            images_list = [[convert_to_rgb(image) for image in images] for images in images_list]
 
         # All transformations expect numpy arrays.
-        images = [to_numpy_array(image) for image in images]
+        images_list = [[to_numpy_array(image) for image in images] for images in images_list]
 
-        if do_rescale and is_scaled_image(images[0]):
+        if do_rescale and is_scaled_image(images_list[0][0]):
             logger.warning_once(
                 "It looks like you are trying to rescale already rescaled images. If the input"
                 " images have pixel values between 0 and 1, set `do_rescale=False` to avoid rescaling them again."
@@ -366,40 +366,45 @@ class Gemma3ImageProcessor(BaseImageProcessor):
 
         if input_data_format is None:
             # We assume that all images have the same channel dimension format.
-            input_data_format = infer_channel_dimension_format(images[0])
+            input_data_format = infer_channel_dimension_format(images_list[0][0])
 
         if do_pan_and_scan:
-            images, num_crops = self._process_images_for_pan_and_scan(
-                images=images,
-                do_pan_and_scan=do_pan_and_scan,
-                pan_and_scan_min_crop_size=pan_and_scan_min_crop_size,
-                pan_and_scan_max_num_crops=pan_and_scan_max_num_crops,
-                pan_and_scan_min_ratio_to_activate=pan_and_scan_min_ratio_to_activate,
-                data_format=data_format,
-                input_data_format=input_data_format,
-            )
-
+            images_list_and_num_crops = [
+                self._process_images_for_pan_and_scan(
+                    images=images,
+                    do_pan_and_scan=do_pan_and_scan,
+                    pan_and_scan_min_crop_size=pan_and_scan_min_crop_size,
+                    pan_and_scan_max_num_crops=pan_and_scan_max_num_crops,
+                    pan_and_scan_min_ratio_to_activate=pan_and_scan_min_ratio_to_activate,
+                    data_format=data_format,
+                    input_data_format=input_data_format,
+                )
+                for images in images_list
+            ]
+            images_list = [images for images, _ in images_list_and_num_crops]
+            num_crops = [num_crops for _, num_crops in images_list_and_num_crops]
         else:
-            num_crops = [0 for _ in images]
+            num_crops = [[0] for _ in images_list]
 
         processed_images = []
-        for image in images:
-            if do_resize:
-                height, width = size["height"], size["width"]
-                image = resize(
-                    image=image, size=(height, width), resample=resample, input_data_format=input_data_format
-                )
+        for images in images_list:
+            for image in images:
+                if do_resize:
+                    height, width = size["height"], size["width"]
+                    image = resize(
+                        image=image, size=(height, width), resample=resample, input_data_format=input_data_format
+                    )
 
-            if do_rescale:
-                image = self.rescale(image=image, scale=rescale_factor, input_data_format=input_data_format)
+                if do_rescale:
+                    image = self.rescale(image=image, scale=rescale_factor, input_data_format=input_data_format)
 
-            if do_normalize:
-                image = self.normalize(
-                    image=image, mean=image_mean, std=image_std, input_data_format=input_data_format
-                )
+                if do_normalize:
+                    image = self.normalize(
+                        image=image, mean=image_mean, std=image_std, input_data_format=input_data_format
+                    )
 
-            image = to_channel_dimension_format(image, data_format, input_channel_dim=input_data_format)
-            processed_images.append(image)
+                image = to_channel_dimension_format(image, data_format, input_channel_dim=input_data_format)
+                processed_images.append(image)
 
         data = {"pixel_values": processed_images, "num_crops": num_crops}
         return BatchFeature(data=data, tensor_type=return_tensors)

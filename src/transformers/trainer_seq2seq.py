@@ -351,9 +351,9 @@ class Seq2SeqTrainer(Trainer):
                 with self.compute_loss_context_manager():
                     outputs = model(**inputs)
                 if self.label_smoother is not None:
-                    loss = self.label_smoother(outputs, inputs["labels"]).detach().mean()
+                    loss = self.label_smoother(outputs, inputs["labels"]).mean().detach()
                 else:
-                    loss = (outputs["loss"] if isinstance(outputs, dict) else outputs[0]).detach().mean()
+                    loss = (outputs["loss"] if isinstance(outputs, dict) else outputs[0]).mean().detach()
             else:
                 loss = None
 

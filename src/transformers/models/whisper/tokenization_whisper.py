@@ -377,9 +377,7 @@ class WhisperTokenizer(PreTrainedTokenizer):
         self.cache[token] = word
         return word
 
-    def set_prefix_tokens(
-        self, language: Optional[str] = None, task: Optional[str] = None, predict_timestamps: bool = None
-    ):
+    def set_prefix_tokens(self, language: str = None, task: str = None, predict_timestamps: bool = None):
         """
         Override the prefix tokens appended to the start of the label sequence. This method can be used standalone to
         update the prefix tokens as required when fine-tuning. Example:
@@ -1278,7 +1276,7 @@ def _collate_word_timestamps(tokenizer, tokens, token_timestamps, language, retu
 def _combine_tokens_into_words(
     tokenizer,
     tokens: List[int],
-    language: Optional[str] = None,
+    language: str = None,
     prepend_punctuations: str = "\"'“¡¿([{-",
     append_punctuations: str = "\"'.。,，!！?？:：”)]}、",
 ):
